@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    image: eventmanager:v0.0.1
+    container_name: eventmanager
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
