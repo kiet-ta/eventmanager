@@ -1,7 +1,7 @@
 package com.kietta.eventmanager.domain.ticket.entity;
 
 import com.kietta.eventmanager.core.constant.TicketStatus;
-import com.kietta.eventmanager.domain.Booking.entity.Booking;
+import com.kietta.eventmanager.domain.booking.entity.Booking;
 import com.kietta.eventmanager.domain.event.entity.Event;
 import jakarta.persistence.*;
 import lombok.Getter;

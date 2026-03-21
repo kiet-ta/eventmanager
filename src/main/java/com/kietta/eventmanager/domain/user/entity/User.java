@@ -26,6 +26,7 @@ public class User {
     private String email;
 
     @Column(nullable = false, length = 200)
+
     private  String passwordHash;
 
     @Setter

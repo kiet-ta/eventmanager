@@ -1,4 +1,4 @@
-package com.kietta.eventmanager.domain.Booking.entity;
+package com.kietta.eventmanager.domain.booking.entity;
 
 import com.kietta.eventmanager.core.constant.BookingStatus;
 import com.kietta.eventmanager.domain.event.entity.Event;
