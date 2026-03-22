@@ -13,13 +13,13 @@ public class EmailNotificationServiceImpl implements NotificationService {
     private final JavaMailSender mailSender;
 
     @Override
-    public void sendHelloWorld(String recipient) {
+    public void sendHelloWorld(String recipient, String mess) {
         // declare message format
         SimpleMailMessage message = new SimpleMailMessage();
         // Simple Mail message including TO: recipient SUBJECT: text  MESSAGE: text FROM: sender
         message.setTo(recipient);
         message.setSubject("Hello từ Hệ Thống Săn Vé Fan Meeting");
-        message.setText("Chào dân chơi! Nếu bạn nhận được mail này, tức là BE của bạn đã sẵn sàng bùng nổ rồi đó.");
+        message.setText("Mã OTP của bạn là: " + mess + ". Vui lòng sử dụng mã này để xác thực tài khoản. Mã có hiệu lực trong 5 phút. Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email này.");
 
         //information full so we will send
         mailSender.send(message);
