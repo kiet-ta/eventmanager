@@ -12,6 +12,7 @@ import java.util.UUID;
 
 
 @Entity
+@Table(name = "users")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -26,7 +27,7 @@ public class User {
     private String email;
 
     @Column(nullable = false, length = 200)
-
+    @Setter
     private  String passwordHash;
 
     @Setter

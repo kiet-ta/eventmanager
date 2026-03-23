@@ -2,11 +2,15 @@ package com.kietta.eventmanager.domain.auth.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
+
+import com.kietta.eventmanager.core.constant.CacheConstants;
+
 
 @Slf4j
 @Service
@@ -19,10 +23,9 @@ public class OtpService {
     // This is a wrapper connection with Redis by Spring Boot
     public final StringRedisTemplate redisTemplate;
 
-    // SET PREFIX FOR REDIS CODE, IT HELP IMPROVE RECOGNITION
-    private static final String OTP_PREFIX = "otp:";
-    // SET TIME EXPIRATION FOR OTP, IT HELP IMPROVE SECURITY
-    private static final long OTP_VALIDITY_MINUTES = 5;
+    // SET TIME EXPIRATION FOR OTP, IT HELP IMPROVE SECURITY, USING BEAN
+    @Value("${app.security.otp.validity-minutes:5}")
+    private long OTP_VALIDITY_MINUTES;
 
     public String generateAndSaveOtp (String email) {
         // CREATE A OTP NUMBER WITH 6 DIGITS IMPROVE SECURITY, USING 'SECURENORMAL' IS BETTER THAN RANDOM
@@ -31,13 +34,13 @@ public class OtpService {
         String otp = String.valueOf(otpNum);
 
         // CREATE KEY
-        String redisKey = otp + email;
+        String redisKey = CacheConstants.OTP_PREFIX + email;
 
         // SAVE OTP TO REDIS WITH EXPIRATION TIME
         // TEMPLATE: KEY, VALUE, EXPIRATION TIME, TIME UNIT
         redisTemplate.opsForValue().set(redisKey, otp, OTP_VALIDITY_MINUTES, TimeUnit.MINUTES);
 
-        log.info("Đã sinh OTP cho email: {}, Hết hạn sau {} phút", email, OTP_VALIDITY_MINUTES);
+        log.info("Đã sinh OTP cho email: {}, OTP: {}, Hết hạn sau {} phút", email, otp, OTP_VALIDITY_MINUTES);
         return otp;
     }
 
