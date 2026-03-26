@@ -31,10 +31,12 @@ public class User {
     @Column(nullable = false, length = 50)
     private String lastName;
 
+    @Setter
     @Column(unique = true, nullable = false, length = 50)
     private String identityNumber;
 
     @Enumerated(EnumType.STRING)
+    @Setter
     @Column(length = 20)
     private IdentityUserType identityType = IdentityUserType.CCCD; // CCCD/PASSPORT
 

@@ -1,8 +1,14 @@
 package com.kietta.eventmanager.domain.auth.controller;
 
+import com.kietta.eventmanager.domain.auth.dto.AuthResponse;
+import com.kietta.eventmanager.domain.auth.dto.LoginRequest;
+import com.kietta.eventmanager.domain.auth.dto.RegisterRequest;
 import com.kietta.eventmanager.domain.auth.service.AuthService;
+import com.kietta.eventmanager.domain.auth.service.JwtService;
 import com.kietta.eventmanager.domain.auth.service.NotificationService;
 import com.kietta.eventmanager.domain.auth.service.OtpService;
+import com.kietta.eventmanager.domain.user_identities.entity.UserIdentity;
+import com.kietta.eventmanager.domain.user_identities.repository.UserIdentityRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +22,18 @@ public class AuthController {
     private final NotificationService notificationService;
     private final OtpService otpService;
     private final AuthService authService;
+    private final UserIdentityRepository userIdentityRepository;
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            AuthResponse response = authService.login(request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            // If the password is incorrect or the email is not found, return a 401 Unauthorized message.
+            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
+        }
+    }
 
     // FLOW REGISTER
     // User fill form -> Click "Send OTP"
@@ -27,9 +45,9 @@ public class AuthController {
     /** -> IF OTP IS VALID, CREATE USER ACCOUND, CREATE JWT AND MUST DELETE OTP IN REDIS**/
     // -> Return success message
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> registerUser(@RequestBody RegisterRequest request) {
         try  {
-            authService.registerWithOtp(payload);
+            authService.register(request);
             return ResponseEntity.ok(Map.of("message", "Đăng ký thành công! Welcome to the system."));
         }
         catch (Exception e) {

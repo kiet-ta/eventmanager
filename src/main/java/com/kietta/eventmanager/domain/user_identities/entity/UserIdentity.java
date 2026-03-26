@@ -26,17 +26,22 @@ public class UserIdentity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "userId", nullable = false)
+    @Setter
     private User user;
 
     // LOCAL (Email/Pass), GOOGLE, FACEBOOK
     @Column(nullable = false)
+    @Setter
     private String provider;
 
     @Column(nullable = false, unique = true)
+    @Setter
     private String providerId;
 
+    @Setter
     private String passwordHash;
 
+    @Setter
     private boolean isVerified = false;
 
     @Column(nullable = false, updatable = false)
