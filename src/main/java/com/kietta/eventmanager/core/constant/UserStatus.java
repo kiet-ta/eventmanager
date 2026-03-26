@@ -1,6 +1,6 @@
 package com.kietta.eventmanager.core.constant;
 
-public enum userStatus {
+public enum UserStatus {
     ACTIVE,
     SUSPENDED,
     BANNED,

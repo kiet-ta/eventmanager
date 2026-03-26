@@ -1,6 +1,6 @@
 package com.kietta.eventmanager.core.constant;
 
-public enum userRole {
+public enum UserRole {
     USER,
     ADMIN,
     ORGANIZER

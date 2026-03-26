@@ -24,7 +24,7 @@ public class OtpService {
     public final StringRedisTemplate redisTemplate;
 
     // SET TIME EXPIRATION FOR OTP, IT HELP IMPROVE SECURITY, USING BEAN
-    @Value("${app.security.otp.validity-minutes:5}")
+    @Value("${spring.application.security.otp.validity-minutes:5}")
     private long OTP_VALIDITY_MINUTES;
 
     public String generateAndSaveOtp (String email) {

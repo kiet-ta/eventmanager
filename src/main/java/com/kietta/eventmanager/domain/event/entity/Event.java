@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
+@Table(name = "events")
 @Getter
 @NoArgsConstructor
 public class Event {
@@ -47,6 +48,7 @@ public class Event {
     private Instant openSaleTime;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 20)
     private EventStatus status = EventStatus.DRAFT;
 
     @CreationTimestamp

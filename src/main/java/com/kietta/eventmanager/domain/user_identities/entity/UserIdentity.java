@@ -1,8 +1,9 @@
-package com.kietta.eventmanager.domain.ticket.entity;
+package com.kietta.eventmanager.domain.user_identities.entity;
 
 import com.kietta.eventmanager.core.constant.TicketStatus;
 import com.kietta.eventmanager.domain.booking.entity.Booking;
 import com.kietta.eventmanager.domain.event.entity.Event;
+import com.kietta.eventmanager.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,45 +17,33 @@ import java.util.UUID;
 
 @Entity
 @Getter
-@Table(name = "tickets")
+@Table(name = "user_identities")
 @NoArgsConstructor
-public class Ticket {
-
+public class UserIdentity {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    private Booking booking;
+    @JoinColumn(name = "userId", nullable = false)
+    private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Event event;
-
-    @Setter
-    @Column( nullable = false)
-    private String ticketTier;
-
-    @Setter
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal price;
-
-    @Setter
-    private String seatNumber;
-
-    @Setter
-    private String attendeeName;
+    // LOCAL (Email/Pass), GOOGLE, FACEBOOK
+    @Column(nullable = false)
+    private String provider;
 
     @Column(nullable = false, unique = true)
-    private String qrCode;
+    private String providerId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private TicketStatus status = TicketStatus.ISSUED;
+    private String passwordHash;
 
+    private boolean isVerified = false;
+
+    @Column(nullable = false, updatable = false)
     @CreationTimestamp
-    @Column(updatable = false)
     private Instant createdAt;
 
     @UpdateTimestamp
     private Instant updatedAt;
+
 }

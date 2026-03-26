@@ -4,6 +4,9 @@ spring:
     security:
       otp:
         validity-minutes: 5
+      recaptcha:
+        secret-key: ${RECAPCHA_SECRET_KEY}
+        verify-url: https://www.google.com/recaptcha/api/siteverify
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
@@ -28,4 +31,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      # CHANGE TO 'validate': Hibernate JUST ONLY CHECK Code Entity ARE MATCHING WITH THE REAL DB OR NOT.
+      # IF Code HAS COLUMN DB NOT, IT IMEDIATELY NOTICE WHEN RUN app AND DON'T CREATE .
+      ddl-auto: validate
+    show-sql: true # Bật lên để thấy câu lệnh SQL nó chạy ngầm

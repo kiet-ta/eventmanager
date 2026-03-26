@@ -17,6 +17,15 @@ public class AuthController {
     private final OtpService otpService;
     private final AuthService authService;
 
+    // FLOW REGISTER
+    // User fill form -> Click "Send OTP"
+    // -> System generate OTP and save in Redis
+    // -> System send OTP to user email
+    // -> User receive OTP and fill in form
+    // -> Click "Register"
+    // -> System check OTP in Redis
+    /** -> IF OTP IS VALID, CREATE USER ACCOUND, CREATE JWT AND MUST DELETE OTP IN REDIS**/
+    // -> Return success message
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody Map<String, String> payload) {
         try  {
