@@ -1,6 +1,5 @@
 package com.kietta.eventmanager.domain.auth.service;
 
-import jakarta.websocket.server.ServerEndpoint;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -14,11 +13,10 @@ import java.util.Map;
 @Slf4j
 @Service
 public class RecaptchaService {
-    // Target: send token to GOOGLE for verify
-    @Value("${spring.application.security.secret-key}")
+    @Value("${app.security.recaptcha.secret-key}")
     private String secretKey;
 
-    @Value("${spring.application.security.verify-url}")
+    @Value("${app.security.recaptcha.verify-url}")
     private String verifyUrl;
     // get the api external, using RestTemplate to call (HTTP Client)
     private final RestTemplate restTemplate = new RestTemplate();
@@ -43,6 +41,9 @@ public class RecaptchaService {
             );
 
             Map<String, Object> responseBody = response.getBody();
+            if (responseBody == null) {
+                throw new IllegalArgumentException("Khong the xac minh reCAPTCHA luc nay.");
+            }
 
             // check fields "SUCCESS" for Google return
             boolean isSuccess = (boolean) responseBody.getOrDefault("success", false);

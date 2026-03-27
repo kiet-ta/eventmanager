@@ -1,8 +1,5 @@
 package com.kietta.eventmanager.domain.user_identities.entity;
 
-import com.kietta.eventmanager.core.constant.TicketStatus;
-import com.kietta.eventmanager.domain.booking.entity.Booking;
-import com.kietta.eventmanager.domain.event.entity.Event;
 import com.kietta.eventmanager.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -11,7 +8,6 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -25,7 +21,7 @@ public class UserIdentity {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "userId", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     @Setter
     private User user;
 
@@ -38,8 +34,6 @@ public class UserIdentity {
     @Setter
     private String providerId;
 
-    @Setter
-    private String passwordHash;
 
     @Setter
     private boolean isVerified = false;

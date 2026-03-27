@@ -3,8 +3,10 @@ app:
     jwt:
       secret-key: ${JWT_SECRET_KEY}
       expiration-ms: 86400000 # 1 day in milliseconds
+      register-expiration-ms: 900000 # 15 minutes
     otp:
       validity-minutes: 5
+      max-failed-attempts: 5
     recaptcha:
       secret-key: ${RECAPCHA_SECRETS_KEY}
       verify-url: https://www.google.com/recaptcha/api/siteverify
@@ -12,11 +14,6 @@ app:
 spring:
   application:
     name: ticket-hunting
-    security:
-      otp:
-        validity-minutes: 5
-      secret-key: ${RECAPCHA_SECRETS_KEY}
-      verify-url: https://www.google.com/recaptcha/api/siteverify
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}

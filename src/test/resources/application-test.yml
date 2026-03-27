@@ -1,0 +1,38 @@
+app:
+  security:
+    jwt:
+      secret-key: test-secret-key-test-secret-key-test-secret-key-12345
+      expiration-ms: 3600000
+      register-expiration-ms: 600000
+    otp:
+      validity-minutes: 5
+      max-failed-attempts: 5
+    recaptcha:
+      secret-key: test-recaptcha-secret
+      verify-url: https://www.google.com/recaptcha/api/siteverify
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:eventmanager-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  flyway:
+    enabled: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: test
+      repositories:
+        enabled: false
+  mail:
+    host: localhost
+    port: 2525
+    username: test
+    password: test
+
