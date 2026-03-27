@@ -15,11 +15,11 @@ import java.util.Map;
 @Service
 public class RecaptchaService {
     // Target: send token to GOOGLE for verify
-    @Value("spring.application.security.secret-key")
-    private String recaptcha;
-    @Value("spring.application.security.verify-url")
-    private String verifyUrl;
+    @Value("${spring.application.security.secret-key}")
+    private String secretKey;
 
+    @Value("${spring.application.security.verify-url}")
+    private String verifyUrl;
     // get the api external, using RestTemplate to call (HTTP Client)
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -31,7 +31,7 @@ public class RecaptchaService {
         // Google reCAPTCHA API required data type is form-urlencoded (Not Json)
         // Using Map for flexible API required.
         MultiValueMap<String,String> requestBody = new LinkedMultiValueMap<>();
-        requestBody.add("secret", recaptcha);
+        requestBody.add("secret", secretKey);
         requestBody.add("response", token);
 
         try {
