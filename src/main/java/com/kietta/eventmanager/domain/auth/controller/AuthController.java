@@ -1,11 +1,17 @@
 package com.kietta.eventmanager.domain.auth.controller;
 
+import com.kietta.eventmanager.domain.auth.dto.AuthResponse;
+import com.kietta.eventmanager.domain.auth.dto.CompleteRegisterRequest;
+import com.kietta.eventmanager.domain.auth.dto.SendOtpRequest;
+import com.kietta.eventmanager.domain.auth.dto.VerifyOtpRequest;
+import com.kietta.eventmanager.domain.auth.dto.VerifyOtpResponse;
 import com.kietta.eventmanager.domain.auth.service.AuthService;
-import com.kietta.eventmanager.domain.auth.service.NotificationService;
-import com.kietta.eventmanager.domain.auth.service.OtpService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
@@ -13,31 +19,44 @@ import java.util.Map;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")
 public class AuthController {
-    private final NotificationService notificationService;
-    private final OtpService otpService;
     private final AuthService authService;
 
-    @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody Map<String, String> payload) {
+    @PostMapping("/send-otp")
+    public ResponseEntity<?> sendOtp(@Valid @RequestBody SendOtpRequest request) {
         try  {
-            authService.registerWithOtp(payload);
-            return ResponseEntity.ok(Map.of("message", "Đăng ký thành công! Welcome to the system."));
+            authService.sendOtp(request);
+            return ResponseEntity.ok(Map.of("message", "Ma OTP da duoc gui"));
         }
-        catch (Exception e) {
+        catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-    @PostMapping("/send-otp")
-    public ResponseEntity<?> sendOtp(@RequestBody Map<String, String> payload) {
-        String email = payload.get("email");
-        if (email == null || email.isEmpty()) {
-            return ResponseEntity.badRequest().body("Email is required");
-        }
-        // 1. CREATE OTP AND SAVE IN Redis
-        String generatedOtp = otpService.generateAndSaveOtp(email);
-        notificationService.sendHelloWorld(email, generatedOtp);
 
-        return ResponseEntity.ok(Map.of("message", "Mã xác thực đã được gửi đến " + email));
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        try {
+            VerifyOtpResponse response = authService.verifyOtp(request);
+            if ("REGISTRATION_REQUIRED".equals(response.getStatus())) {
+                return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+            }
+            return ResponseEntity.ok(response);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", e.getReason()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/complete-register")
+    public ResponseEntity<?> completeRegister(@Valid @RequestBody CompleteRegisterRequest request) {
+        try {
+            AuthResponse response = authService.completeRegister(request);
+            return ResponseEntity.ok(response);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", e.getReason()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
 }

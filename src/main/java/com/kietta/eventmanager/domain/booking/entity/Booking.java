@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
+@Table(name = "bookings")
 @Getter
 @NoArgsConstructor
 public class Booking {
@@ -40,6 +41,7 @@ public class Booking {
     private Integer ticketQuantity;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 20)
     private BookingStatus status = BookingStatus.PENDING;
 
     @Setter

@@ -1,65 +1,91 @@
 package com.kietta.eventmanager.domain.auth.service;
 
-import com.kietta.eventmanager.core.constant.CacheConstants;
+import com.kietta.eventmanager.domain.auth.dto.AuthResponse;
+import com.kietta.eventmanager.domain.auth.dto.CompleteRegisterRequest;
+import com.kietta.eventmanager.domain.auth.dto.SendOtpRequest;
+import com.kietta.eventmanager.domain.auth.dto.VerifyOtpRequest;
+import com.kietta.eventmanager.domain.auth.dto.VerifyOtpResponse;
 import com.kietta.eventmanager.domain.user.entity.User;
 import com.kietta.eventmanager.domain.user.repository.UserRepository;
+import com.kietta.eventmanager.domain.user_identities.entity.UserIdentity;
+import com.kietta.eventmanager.domain.user_identities.repository.UserIdentityRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
+import java.util.Locale;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AuthService {
-    private final StringRedisTemplate redisTemplate;
+    private static final String LOCAL_PROVIDER = "LOCAL";
+
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final UserIdentityRepository userIdentityRepository;
+    private final RecaptchaService recaptchaService;
+    private final OtpService otpService;
+    private final NotificationService notificationService;
+    private final JwtService jwtService;
 
-    // SET TRANSACTION IF THE RES IS ERROR INTERMEDIATE ROLL BACK
+    public void sendOtp(SendOtpRequest request) {
+        String email = normalizeEmail(request.getEmail());
+        recaptchaService.verifyToken(request.getRecaptchaToken());
+
+        String generatedOtp = otpService.generateAndSaveOtp(email);
+        notificationService.sendOtpCode(email, generatedOtp);
+        log.info("OTP was sent to {}", email);
+    }
+
+    public VerifyOtpResponse verifyOtp(VerifyOtpRequest request) {
+        String email = normalizeEmail(request.getEmail());
+
+        otpService.assertNotLocked(email);
+        otpService.verifyOtpOrThrow(email, request.getOtp());
+
+        return userIdentityRepository
+                .findByProviderIgnoreCaseAndProviderIdIgnoreCase(LOCAL_PROVIDER, email)
+                .map(identity -> {
+                    String accessToken = jwtService.generateToken(identity.getUser().getId(), email);
+                    return VerifyOtpResponse.loginSuccess(accessToken);
+                })
+                .orElseGet(() -> {
+                    String registerToken = jwtService.generateRegisterToken(email);
+                    return VerifyOtpResponse.registrationRequired(registerToken);
+                });
+    }
+
     @Transactional
-    public void registerWithOtp(Map<String,String> payload) {
-        String email = payload.get("email");
-        String inputOtp = payload.get("otp");
-        String rawPassword = payload.get("password"); // Bạn gửi 'password'
-        String fullName = payload.get("fullName");     // Bạn gửi 'fullName'
+    public AuthResponse completeRegister(CompleteRegisterRequest request) {
+        String email = normalizeEmail(jwtService.extractRegisterEmail(request.getRegisterToken()));
 
-        //CHECK OTP IN REDIS ARE MATCHING WITH THE inputOtp
-        String redisKey = CacheConstants.OTP_PREFIX + email;
-        String saveOtp = redisTemplate.opsForValue().get(redisKey);
-
-        if (saveOtp == null) {
-            throw new IllegalArgumentException("Mã OTP đã hết hạn hoặc không tồn tại!");
-        }
-        if (!saveOtp.equals(inputOtp)) {
-            throw new IllegalArgumentException("Mã OTP không chính xác!");
+        if (userIdentityRepository.existsByProviderIgnoreCaseAndProviderIdIgnoreCase(LOCAL_PROVIDER, email)) {
+            throw new IllegalArgumentException("Email nay da duoc su dung");
         }
 
-        // CHECK DUPLICATE SPAM MAIL
-        if (userRepository.existsByEmail(email)) {
-            throw new IllegalArgumentException("Email này đã được sử dụng!");
+        User newUser = new User();
+        newUser.setFirstName(request.getFirstName());
+        newUser.setLastName(request.getLastName());
+        newUser.setIdentityNumber(request.getIdentityNumber());
+        newUser.setIdentityType(request.getIdentityType());
+        userRepository.save(newUser);
+
+        UserIdentity identity = new UserIdentity();
+        identity.setUser(newUser);
+        identity.setProvider(LOCAL_PROVIDER);
+        identity.setProviderId(email);
+        identity.setVerified(true);
+        userIdentityRepository.save(identity);
+
+        String accessToken = jwtService.generateToken(newUser.getId(), email);
+        log.info("Completed passwordless registration for {}", email);
+        return new AuthResponse(accessToken, "Bearer");
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Email is required");
         }
-
-        // IF ALL OF ABOVE ARE SUCCESS, INTERMEDIATE DELETE THE OTP
-        redisTemplate.delete(redisKey);
-
-        //HASH RAWPASSWORD AND SAVE TO DB
-        User user = new User();
-        user.setEmail(email);
-        user.setPasswordHash(passwordEncoder.encode(rawPassword));
-
-        // Tách fullName thành firstName và lastName
-        if (fullName != null && !fullName.isEmpty()) {
-            String[] parts = fullName.trim().split("\\s+", 2);
-            user.setFirstName(parts[0]);
-            user.setLastName(parts.length > 1 ? parts[1] : "");
-        } else {
-            user.setFirstName("Unknown");
-            user.setLastName("");
-        }
-
-        userRepository.save(user);
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

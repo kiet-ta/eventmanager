@@ -1,9 +1,19 @@
+app:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET_KEY}
+      expiration-ms: 86400000 # 1 day in milliseconds
+      register-expiration-ms: 900000 # 15 minutes
+    otp:
+      validity-minutes: 5
+      max-failed-attempts: 5
+    recaptcha:
+      secret-key: ${RECAPCHA_SECRETS_KEY}
+      verify-url: https://www.google.com/recaptcha/api/siteverify
+
 spring:
   application:
     name: ticket-hunting
-    security:
-      otp:
-        validity-minutes: 5
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
@@ -26,6 +36,14 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
 
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true # Tự động tạo bảng lịch sử nếu DB đã có dữ liệu từ trước
+
   jpa:
     hibernate:
+      # Use 'update' temporarily to allow Hibernate to create missing tables
+      # before Flyway manages them in the future.
       ddl-auto: update
+    show-sql: true # Bật lên để thấy câu lệnh SQL nó chạy ngầm

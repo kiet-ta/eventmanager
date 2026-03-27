@@ -16,6 +16,7 @@ import java.util.UUID;
 
 @Entity
 @Getter
+@Table(name = "tickets")
 @NoArgsConstructor
 public class Ticket {
 
@@ -47,6 +48,7 @@ public class Ticket {
     private String qrCode;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 20)
     private TicketStatus status = TicketStatus.ISSUED;
 
     @CreationTimestamp

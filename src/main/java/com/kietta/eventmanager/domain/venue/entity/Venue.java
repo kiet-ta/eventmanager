@@ -11,6 +11,7 @@ import java.time.Instant;
 
 @Entity
 @Getter
+@Table(name = "venues")
 @NoArgsConstructor
 public class Venue {
     @Id

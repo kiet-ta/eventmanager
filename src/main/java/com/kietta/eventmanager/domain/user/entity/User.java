@@ -1,7 +1,8 @@
 package com.kietta.eventmanager.domain.user.entity;
 
-import com.kietta.eventmanager.core.constant.userRole;
-import com.kietta.eventmanager.core.constant.userStatus;
+import com.kietta.eventmanager.core.constant.IdentityUserType;
+import com.kietta.eventmanager.core.constant.UserRole;
+import com.kietta.eventmanager.core.constant.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -20,15 +21,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID eventId;
-
-    @Setter
-    @Column(nullable = false)
-    private String email;
-
-    @Column(nullable = false, length = 200)
-    @Setter
-    private  String passwordHash;
+    private UUID id;
 
     @Setter
     @Column(nullable = false, length = 50)
@@ -39,13 +32,24 @@ public class User {
     private String lastName;
 
     @Setter
+    @Column(unique = true, nullable = false, length = 50)
+    private String identityNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Setter
+    @Column(length = 20)
+    private IdentityUserType identityType = IdentityUserType.CCCD; // CCCD/PASSPORT
+
+    @Setter
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
-    private userRole role = userRole.USER;
+    @Column(length = 20)
+    private UserRole role = UserRole.USER;
 
     @Enumerated(EnumType.STRING)
-    private userStatus status = userStatus.ACTIVE;
+    @Column(length = 20)
+    private UserStatus status = UserStatus.ACTIVE;
 
     @Column(nullable = false, updatable = false)
     @CreationTimestamp
