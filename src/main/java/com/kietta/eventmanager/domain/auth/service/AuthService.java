@@ -43,7 +43,7 @@ public class AuthService {
         otpService.assertNotLocked(email);
         otpService.verifyOtpOrThrow(email, request.getOtp());
 
-        return userIdentityRepository
+        VerifyOtpResponse response = userIdentityRepository
                 .findByProviderIgnoreCaseAndProviderIdIgnoreCase(LOCAL_PROVIDER, email)
                 .map(identity -> {
                     String accessToken = jwtService.generateToken(identity.getUser().getId(), email);
@@ -53,6 +53,9 @@ public class AuthService {
                     String registerToken = jwtService.generateRegisterToken(email);
                     return VerifyOtpResponse.registrationRequired(registerToken);
                 });
+
+        otpService.clearOtpState(email);
+        return response;
     }
 
     @Transactional

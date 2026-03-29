@@ -1,7 +1,9 @@
 package com.kietta.eventmanager.core.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -11,10 +13,14 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
 public class SecurityConfig {
+
+    @Value("${app.security.cors.allowed-origins:http://localhost:3000,http://127.0.0.1:3000}")
+    private String allowedOrigins;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -27,10 +33,11 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        // TEMP OPEN ALL API /auth/
-                        // IF THE FUTURE PUBLIC IN PRODUCTION SHOULD LEAVE THIS API OPEN
-                        //EXAMPLE: /api/v1/auth/send-otp, /api/v1/auth/verify-otp
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/auth/send-otp").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/auth/verify-otp").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/auth/complete-register").permitAll()
+                    .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 );
         return http.build();
@@ -39,10 +46,16 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000")); // Set allowed origins here, e.g., List.of("http://localhost:3000")
+        List<String> parsedOrigins = Arrays.stream(allowedOrigins.split(","))
+            .map(String::trim)
+            .filter(origin -> !origin.isBlank())
+            .toList();
+
+        config.setAllowedOrigins(parsedOrigins);
         config.addAllowedHeader("*"); // Allow all headers
         config.addAllowedMethod("*");
         config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

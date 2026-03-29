@@ -12,7 +12,6 @@ public class SendOtpRequest {
     @NotBlank(message = "Email is required")
     private String email;
 
-    @NotBlank(message = "reCAPTCHA token is required")
     private String recaptchaToken;
 }
 

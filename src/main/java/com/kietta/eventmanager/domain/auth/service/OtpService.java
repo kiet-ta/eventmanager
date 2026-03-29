@@ -69,8 +69,6 @@ public class OtpService {
             }
             throw new IllegalArgumentException("OTP khong dung");
         }
-
-        clearOtpState(email);
     }
 
     public void clearOtpState(String email) {

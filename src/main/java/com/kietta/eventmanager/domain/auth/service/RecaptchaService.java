@@ -13,6 +13,9 @@ import java.util.Map;
 @Slf4j
 @Service
 public class RecaptchaService {
+    @Value("${app.security.recaptcha.enabled:true}")
+    private boolean recaptchaEnabled;
+
     @Value("${app.security.recaptcha.secret-key}")
     private String secretKey;
 
@@ -22,6 +25,11 @@ public class RecaptchaService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     public void verifyToken(String token) {
+        if (!recaptchaEnabled) {
+            log.info("reCAPTCHA verification is disabled by configuration. Skipping verification.");
+            return;
+        }
+
         if (token == null || token.isEmpty()) {
             throw new IllegalArgumentException("Invalid Token reCAPTCHA!");
         }
