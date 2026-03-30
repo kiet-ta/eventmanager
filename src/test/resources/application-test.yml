@@ -2,8 +2,11 @@ app:
   security:
     jwt:
       secret-key: test-secret-key-test-secret-key-test-secret-key-12345
-      expiration-ms: 3600000
+      access-token-expiration-ms: 3600000
+      refresh-token-expiration-ms: 1209600000
       register-expiration-ms: 600000
+      cookie-path: /api/v1/auth
+      cookie-domain: localhost
     otp:
       validity-minutes: 5
       max-failed-attempts: 5

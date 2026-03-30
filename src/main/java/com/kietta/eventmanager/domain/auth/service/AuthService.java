@@ -12,8 +12,12 @@ import com.kietta.eventmanager.domain.user_identities.repository.UserIdentityRep
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.util.Locale;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -27,6 +31,7 @@ public class AuthService {
     private final OtpService otpService;
     private final NotificationService notificationService;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     public void sendOtp(SendOtpRequest request) {
         String email = normalizeEmail(request.getEmail());
@@ -46,8 +51,8 @@ public class AuthService {
         VerifyOtpResponse response = userIdentityRepository
                 .findByProviderIgnoreCaseAndProviderIdIgnoreCase(LOCAL_PROVIDER, email)
                 .map(identity -> {
-                    String accessToken = jwtService.generateToken(identity.getUser().getId(), email);
-                    return VerifyOtpResponse.loginSuccess(accessToken);
+                    AuthResponse authTokens = issueAuthTokens(identity.getUser(), email);
+                    return VerifyOtpResponse.loginSuccess(authTokens.getAccessToken(), authTokens.getRefreshToken());
                 })
                 .orElseGet(() -> {
                     String registerToken = jwtService.generateRegisterToken(email);
@@ -80,9 +85,57 @@ public class AuthService {
         identity.setVerified(true);
         userIdentityRepository.save(identity);
 
-        String accessToken = jwtService.generateToken(newUser.getId(), email);
+        AuthResponse authTokens = issueAuthTokens(newUser, email);
         log.info("Completed passwordless registration for {}", email);
-        return new AuthResponse(accessToken, "Bearer");
+        return authTokens;
+    }
+
+    public AuthResponse refreshAccessToken(String refreshToken) {
+        JwtService.RefreshTokenPayload payload = jwtService.extractRefreshTokenPayload(refreshToken);
+
+        // Kiểm tra JTI trong family có match không
+        if (!refreshTokenService.isValidJtiForFamily(payload.familyId(), payload.jti())) {
+            // ⚠️ Token theft detected! Revoke toàn bộ family
+            refreshTokenService.revokeFamily(payload.familyId());
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Refresh token khong hop le hoac da bi su dung. Tai khoan da bi khoa."
+            );
+        }
+
+        // ✅ Valid! Perform rotation: issue new tokens, update JTI in family
+        String email = normalizeEmail(payload.email());
+
+        User user = userRepository.findById(payload.userId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Nguoi dung khong ton tai"));
+
+        String accessToken = jwtService.generateAccessToken(user, email);
+        String newRefreshToken = jwtService.generateRefreshToken(payload.userId(), email, payload.familyId());
+
+        JwtService.RefreshTokenPayload newPayload = jwtService.extractRefreshTokenPayload(newRefreshToken);
+        refreshTokenService.saveRefreshTokenToFamily(payload.familyId(), newPayload.jti(), jwtService.getRefreshTokenExpiration());
+
+        return new AuthResponse(accessToken, newRefreshToken, "Bearer");
+    }
+
+    public void logout(String refreshToken) {
+        try {
+            JwtService.RefreshTokenPayload payload = jwtService.extractRefreshTokenPayload(refreshToken);
+            refreshTokenService.revokeFamily(payload.familyId());
+        } catch (ResponseStatusException ignored) {
+            // Idempotent logout: keep same response even when token is malformed/expired.
+        }
+    }
+
+    private AuthResponse issueAuthTokens(User user, String email) {
+        String accessToken = jwtService.generateAccessToken(user, email);
+        String familyId = UUID.randomUUID().toString();
+        String refreshToken = jwtService.generateRefreshToken(user.getId(), email, familyId);
+
+        JwtService.RefreshTokenPayload payload = jwtService.extractRefreshTokenPayload(refreshToken);
+        refreshTokenService.saveRefreshTokenToFamily(familyId, payload.jti(), jwtService.getRefreshTokenExpiration());
+
+        return new AuthResponse(accessToken, refreshToken, "Bearer");
     }
 
     private String normalizeEmail(String email) {

@@ -1,5 +1,6 @@
 package com.kietta.eventmanager.domain.auth.service;
 
+import com.kietta.eventmanager.domain.user.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -19,8 +20,11 @@ public class JwtService {
     @Value("${app.security.jwt.secret-key}")
     private String secretKey;
 
-    @Value("${app.security.jwt.expiration-ms}")
-    private long jwtExpiration;
+    @Value("${app.security.jwt.access-token-expiration-ms:900000}")
+    private long accessTokenExpiration;
+
+    @Value("${app.security.jwt.refresh-token-expiration-ms:604800000}")
+    private long refreshTokenExpiration;
 
     @Value("${app.security.jwt.register-expiration-ms:600000}")
     private long registerTokenExpiration;
@@ -33,14 +37,38 @@ public class JwtService {
         }
     }
 
-    public String generateToken(UUID userId, String email) {
+    public String generateAccessToken(User user, String email) {
         return Jwts.builder()
-                .subject(userId.toString())
+                .subject(user.getId().toString())
                 .claim("email", email)
+                .claim("role", user.getRole().name())
+                .claim("purpose", "ACCESS")
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .expiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
                 .signWith(getSignInKey())
                 .compact();
+    }
+
+    public String generateRefreshToken(UUID userId, String email, String familyId) {
+        String jti = UUID.randomUUID().toString();
+        return Jwts.builder()
+                .subject(userId.toString())
+                .id(jti)
+                .claim("email", email)
+                .claim("purpose", "REFRESH")
+                .claim("familyId", familyId)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + refreshTokenExpiration))
+                .signWith(getSignInKey())
+                .compact();
+    }
+
+    public long getRefreshTokenExpiration() {
+        return refreshTokenExpiration;
+    }
+
+    public long getAccessTokenExpiration() {
+        return accessTokenExpiration;
     }
 
     public String generateRegisterToken(String email) {
@@ -63,6 +91,34 @@ public class JwtService {
         return claims.get("email", String.class);
     }
 
+    public RefreshTokenPayload extractRefreshTokenPayload(String token) {
+        Claims claims = parseClaims(token);
+        String purpose = claims.get("purpose", String.class);
+        if (!"REFRESH".equals(purpose)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token khong hop le");
+        }
+
+        String subject = claims.getSubject();
+        String email = claims.get("email", String.class);
+        String jti = claims.getId();
+        String familyId = claims.get("familyId", String.class);
+
+        if (subject == null || email == null || jti == null || familyId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token khong hop le");
+        }
+
+        try {
+            UUID userId = UUID.fromString(subject);
+            return new RefreshTokenPayload(userId, email, jti, familyId);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token khong hop le");
+        }
+    }
+
+    public Claims extractAllClaims(String token) {
+        return parseClaims(token);
+    }
+
     private Claims parseClaims(String token) {
         try {
             return Jwts.parser()
@@ -71,7 +127,10 @@ public class JwtService {
                     .parseSignedClaims(token)
                     .getPayload();
         } catch (JwtException | IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Register token khong hop le");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token khong hop le");
         }
+    }
+
+    public record RefreshTokenPayload(UUID userId, String email, String jti, String familyId) {
     }
 }
