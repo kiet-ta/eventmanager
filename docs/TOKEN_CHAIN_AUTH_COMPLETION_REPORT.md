@@ -26,7 +26,7 @@ Token Chain Authentication system has been successfully implemented across both 
 
 ```mermaid
 graph TD
-    A["👤 USER LOGIN<br/>send-otp → verify-otp<br/>OTP validated"] --> B["🔐 issueAuthTokens<br/>User, email"]
+    A["👤 USER LOGIN<br/>send-otp → verify-otp<br/>OTP validated"] --> B["🔐 handleAuthTokens<br/>User, email"]
     
     B --> C["Generate familyId UUID"]
     C --> D["Create Access Token<br/>15 min TTL<br/>Claims: userId, role, purpose=ACCESS"]
@@ -216,7 +216,7 @@ public record RefreshTokenPayload(
 
 ```java
 // Main token issuance on login/register
-public AuthResponse issueAuthTokens(User user, String email) {
+public AuthResponse handleAuthTokens(User user, String email) {
     String familyId = UUID.randomUUID().toString();
     
     String accessToken = jwtService.generateAccessToken(user, email);

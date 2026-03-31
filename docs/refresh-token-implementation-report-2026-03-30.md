@@ -144,7 +144,7 @@ Nếu không hợp lệ/hết hạn: trả `401`.
    - `completeRegister(...)`: trả access + refresh
    - thêm `refreshAccessToken(...)`
    - thêm `logout(...)`
-   - thêm helper `issueAuthTokens(...)`
+   - thêm helper `handleAuthTokens(...)`
    - File: `src/main/java/com/kietta/eventmanager/domain/auth/service/AuthService.java`
 
 5. **DTOs**

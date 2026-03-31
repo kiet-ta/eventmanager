@@ -51,7 +51,7 @@ public class AuthService {
         VerifyOtpResponse response = userIdentityRepository
                 .findByProviderIgnoreCaseAndProviderIdIgnoreCase(LOCAL_PROVIDER, email)
                 .map(identity -> {
-                    AuthResponse authTokens = issueAuthTokens(identity.getUser(), email);
+                    AuthResponse authTokens = handleAuthTokens(identity.getUser(), email);
                     return VerifyOtpResponse.loginSuccess(authTokens.getAccessToken(), authTokens.getRefreshToken());
                 })
                 .orElseGet(() -> {
@@ -85,7 +85,7 @@ public class AuthService {
         identity.setVerified(true);
         userIdentityRepository.save(identity);
 
-        AuthResponse authTokens = issueAuthTokens(newUser, email);
+        AuthResponse authTokens = handleAuthTokens(newUser, email);
         log.info("Completed passwordless registration for {}", email);
         return authTokens;
     }
@@ -127,7 +127,7 @@ public class AuthService {
         }
     }
 
-    private AuthResponse issueAuthTokens(User user, String email) {
+    private AuthResponse handleAuthTokens(User user, String email) {
         String accessToken = jwtService.generateAccessToken(user, email);
         String familyId = UUID.randomUUID().toString();
         String refreshToken = jwtService.generateRefreshToken(user.getId(), email, familyId);
